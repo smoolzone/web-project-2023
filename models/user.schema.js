@@ -1,8 +1,81 @@
-const { boolean } = require('joi');
+const Joi = require('joi');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const jwt = require("jsonwebtoken"); 
 
+let userSchema = new Schema(
+    {
+        _id: { type: mongoose.SchemaTypes.ObjectId },
+        name: {
+            first: {
+                type: String,
+                required: true,
+            },
+            middle: {
+                type: String,
+                required: false,
+            },
+            last: {
+                type: String,
+                required: true,
+            },
+        },
+        email: {
+            type: String,
+            required: true,
+        },
+        password: {
+            type: String,
+            required: true,
+        },
+        address: {
+            state: {
+                type: String,
+                required: false,
+            },
+            country: {
+                type: String,
+                required: false,
+            },
+            city: {
+                type: String,
+                required: true,
+            },
+            city: {
+                type: String,
+                required: true,
+            },
+            street: {
+                type: String,
+                required: true,
+            },
+            zip: {
+                type: Number,
+                required: false,
+            },
+            houseNumber: {
+                type: Number,
+                required: false,
+            },
+            image: {
+                url: {
+                    type: String,
+                    required: false,
+                },
+                alt: {
+                    type: String,
+                    required: false,
+                },
+            }
+        },
+        isBusiness: {
+            type: Boolean
+        }
+    },
+    {
+        collection: 'users'
+    }
+);
 
 userSchema.methods.generateAuthToken = function () {
     const token = jwt.sign({ _id: this._id, isBusiness: this.isBusiness }, process.env.JWTPRIVATEKEY);

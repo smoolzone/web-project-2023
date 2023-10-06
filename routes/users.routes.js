@@ -126,7 +126,6 @@ Router.delete("/:id", async (req,res)=>{
     catch(error){
         return next(error);  
     }
-
 });
 
-export default Router;
+module.exports = Router;

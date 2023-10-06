@@ -1,5 +1,5 @@
 const express = require('express');
-const chalk = require('chalk');
+var chalk = require('chalk');
 const usersRouter = require('./routes/users.routes.js');
 const cardsRouter = require('./routes/cards.routes.js');
 
@@ -7,6 +7,7 @@ const app = express();
 
 app.get("/", (req, res)=>{
     console.log(chalk.blue('Hello world!'));
+    res.send("Hello world")
 });
 
 app.use("/cards", cardsRouter);

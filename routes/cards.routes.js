@@ -2,7 +2,7 @@ const express = require("express");
 const { Card } = require('./../models/card.schema');
 
 
-let router = express.Router();
+let Router = express.Router();
 
 // GET localhost:3000/cards/
 
@@ -126,4 +126,4 @@ Router.delete("/:id", async (req,res)=>{
 });
 
 
-export default router;
+module.exports = Router;
