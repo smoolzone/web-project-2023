@@ -55,4 +55,7 @@ let cardSchema = new Schema({
         collection: 'cards'
     });
 
-module.exports = mongoose.model('Card', cardSchema)
+
+const Card = mongoose.model("cards", cardSchema);
+
+module.exports = { Card };
