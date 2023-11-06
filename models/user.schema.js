@@ -6,7 +6,7 @@ const jwt = require("jsonwebtoken");
 
 let userSchema = new Schema(
     {
-        _id: { type: mongoose.SchemaTypes.ObjectId },
+        // _id: { type: mongoose.SchemaTypes.ObjectId },
         name: {
             first: {
                 type: String,
@@ -69,6 +69,9 @@ let userSchema = new Schema(
                 },
             }
         },
+        isAdmin: {
+            type: Boolean
+        },
         isBusiness: {
             type: Boolean
         }
@@ -79,7 +82,7 @@ let userSchema = new Schema(
 );
 
 userSchema.methods.generateAuthToken = function () {
-    const token = jwt.sign({ _id: this._id, isBusiness: this.isBusiness }, process.env.JWTPRIVATEKEY);
+    const token = jwt.sign({ _id: this._id, isBusiness: this.isBusiness, isAdmin: this.isAdmin }, process.env.JWTPRIVATEKEY);
     return token;
 };
 

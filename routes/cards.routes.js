@@ -1,4 +1,5 @@
 const express = require("express");
+const auth = require("../middleware/auth");
 const { Card } = require('./../models/card.schema');
 
 
@@ -8,7 +9,7 @@ let Router = express.Router();
 
 /**
  * No 1 
- * Get all Users 
+ * Get all cards 
  */
 Router.get("/", async (req, res, next)=>{
 
@@ -26,24 +27,22 @@ Router.get("/", async (req, res, next)=>{
  * No 2
  * Get User Cards 
  */
-Router.get("/my-cards", async (req, res, next)=>{
-
-    // TODO 
-    // get Id
+Router.get("/my-cards", [auth.verifyToken], async (req, res, next)=>{
 
     try {
-        const data = await Card.find({ user_id: req.user.id });
+        console.log('my-cards', req.user);
+        const data = await Card.find({ user_id: req.user._id });
         res.json(data);
     }
     catch(error) {
-        return next(error);
+       res.json(error);
     }
 
 });
 
 /**
  * No 3
- * Get user (by id)
+ * Get card (by id)
  */
 Router.get("/:id", async (req,res, next) => {
 
@@ -59,17 +58,16 @@ Router.get("/:id", async (req,res, next) => {
 
 /**
  * No 4
- * Create user
+ * Create card
  */
-Router.post("/", async (req,res)=>{
-
-    // TODO
-    // Add isBusiyness validation
-    // ...
+Router.post("/", [auth.verifyToken, auth.isBusinessUser], async (req,res)=>{
 
     try {
-        const data = new Card(req.body);
-        res.json(data);
+        const card = new Card(req.body);
+        card.user_id = req.user._id;
+        card.save();
+
+        res.json(card);
     }
     catch(error){
         return next(error);  
@@ -79,32 +77,46 @@ Router.post("/", async (req,res)=>{
 
 /**
  * No 5
- * Edit user (by id)
+ * Edit card (by id)
  */
-Router.put("/:id", async (req,res)=>{
+Router.put("/:id", [auth.verifyToken], async (req,res)=>{
 
     try {
-        const data = Card.findByIdAndUpdate(req.params.id, { ...req.params.body } );
+        const card = await Card.findById(req.params.id);
+
+        if(card.user_id != req.user._id) return res.status(403).send("Cannot update card");
+
+        const data = await Card.findByIdAndUpdate(req.params.id, { $set: { ...req.body } } );
         res.json(data);
     }
     catch(error){
-        return next(error);  
+        res.json(error); 
     }
 
 });
 
 /**
  * No 6
- * Change likes status (by id)
+ * Change card likes status (by id)
  */
-Router.patch("/:id", async (req,res)=>{
+Router.patch("/:id", [auth.verifyToken], async (req,res)=>{
 
     try {
-        const data = await Card.findByIdAndUpdate(req.params.id, { isBusiness: req.params.body.isBusiness });
-        res.json(data);
+        const card = await Card.findById(req.params.id);
+
+        console.log('card', req.user)
+        const index = card.likes.findIndex(like => like == req.user._id);
+        if(index >= 0) {
+            card.likes.splice(index, 1);
+        }
+        else {
+            card.likes.push(req.user._id);
+        }
+        card.save();
+        res.json(card);
     }
     catch(error){
-        return next(error);  
+       res.json(error); 
     }
     
 });
@@ -113,14 +125,18 @@ Router.patch("/:id", async (req,res)=>{
  * No 7
  * Delete Card (by id)
  */
-Router.delete("/:id", async (req,res)=>{
+Router.delete("/:id", [auth.verifyToken], async (req,res)=>{
     
     try {
-        const data = await Card.delete(req.params.id);
+        const card = await Card.findById(req.params.id);
+        if(!card) return res.status(400).json('No card found');
+        if(req.user._id !== card.user_id && !req.user.isAdmin)  return res.status(403).json('No Permission');
+
+        const data = await Card.deleteOne({ _id: req.params.id });
         res.json(data);
     }
     catch(error){
-        return next(error);  
+        return res.status(400).json(error); 
     }
 
 });

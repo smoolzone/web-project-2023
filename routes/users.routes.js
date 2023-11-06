@@ -1,35 +1,40 @@
 const express = require("express");
 const { User, validate } = require("./../models/user.schema");
+const auth = require("../middleware/auth");
+const bcrypt = require("bcryptjs");
 
 let Router = express.Router();
 
+// localhost:3000/users/
+
 /**
  * No 1
- * Register Login
+ * Register User
  */
 Router.post("/", async (req,res)=>{
 
     try {
-        const { error } = validateUser(req.body);
+        const { error } = validate(req.body);
+
         if (error) return res.status(400).send(error.details[0].message);
 
-        const user = await User.findOne({ email: req.body.email });
-        if (!user) return res.status(400).send("Invalid email or password");
+        // find exist user
+        const existUser = await User.findOne({ email: req.body.email });
+        if (existUser) return res.status(400).send("Invalid email, already exists");
+        
+        const user = new User(req.body);
 
-        const validPassword = await bcrypt.compare(
-            req.body.password,
-            user.password
-        );
-        if (!validPassword)
-            return res.status(400).send("Invalid email or password");
+        const salt = await bcrypt.genSalt(Number(process.env.SALT));
+        user.password = await bcrypt.hash(user.password, salt);
 
-        const token = user.generateAuthToken();
-        res.send(token);
+        await user.save();
+
+        res.send(user);
     } catch (error) {
+        console.log('error', error);
         res.send("An error occured");
     }
 });
-
 
 /**
  * No 2
@@ -37,19 +42,13 @@ Router.post("/", async (req,res)=>{
  */
 Router.post("/login", async (req,res)=>{
 
-
-    const { error } = validate(req.body);
-    if (error) return res.status(400).send(error.details[0].message);
-
-    console.log('user', req.body);
-
     try {
         const user = await User.findOne({ email: req.body.email });
         if (!user) { 
             return res.status(400).send("Invalid email or password");
         }
 
-        console.log('user');
+        console.log('user', user);
 
         const validPassword = await bcrypt.compare(
             req.body.password,
@@ -70,7 +69,7 @@ Router.post("/login", async (req,res)=>{
  * No 3 
  * Get all Users 
  */
-Router.get("/", async (req, res, next)=>{
+Router.get("/", [auth.verifyToken, auth.isAdmin], async (req, res, next)=>{
 
     try {
         const data = await User.find();
@@ -86,10 +85,12 @@ Router.get("/", async (req, res, next)=>{
  * No 4
  * Get user (by id)
  */
-Router.get("/:id", async (req,res, next) => {
+Router.get("/:id", [auth.verifyToken], async (req,res, next) => {
 
     try {
         const data = await User.findById(req.params.id);
+        if(!data) return res.status(400).send("User doesn't exist");
+
         res.json(data);
     }
     catch(error){
@@ -102,15 +103,16 @@ Router.get("/:id", async (req,res, next) => {
  * No 5
  * Edit user (by id)
  */
-Router.put("/:id",(req,res)=>{
+Router.put("/:id", [auth.verifyToken], async (req,res)=>{
 
-    User.findByIdAndUpdate(req.params.id, { ...req.params.body } , (error, data) => {
-        if (error) {
-            return next(error)
-        } else {
-            res.json(data)
-        }
-    });
+    try {
+        const res = await User.findByIdAndUpdate(req.params.id, { $set: { ...req.body } });
+        
+        res.json(res);
+    }
+    catch(error) {
+        return res.json(error);
+    };
 
 });
 
@@ -118,15 +120,16 @@ Router.put("/:id",(req,res)=>{
  * No 6
  * Change isBusiness status (by id)
  */
-Router.patch("/:id",(req,res)=>{
+Router.patch("/:id", [auth.verifyToken], async (req,res)=>{
 
-    User.findByIdAndUpdate(req.params.id, { isBusiness: req.params.body.isBusiness } , (error, data) => {
-        if (error) {
-            return next(error)
-        } else {
-            res.json(data)
-        }
-    });
+    try {
+        const res = await User.findByIdAndUpdate(req.params.id, { isBusiness: req.body.isBusiness }); 
+        
+        res.json(data);
+    }
+    catch(error) {
+        res.json(error);
+    }
     
 });
 
@@ -134,14 +137,15 @@ Router.patch("/:id",(req,res)=>{
  * No 7
  * Delete user (by id)
  */
-Router.delete("/:id", async (req,res)=>{
+Router.delete("/:id", [auth.verifyToken], async (req,res)=>{
     
     try {
-        const data = await User.delete(req.params.id);
+        const data = await User.deleteOne({ _id: req.params.id});
+
         res.json(data);
     }
     catch(error){
-        return next(error);  
+        return res.json(error);  
     }
 });
 
