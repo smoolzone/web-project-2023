@@ -17,7 +17,7 @@ app.use(bodyParser.urlencoded({
 //Health check
 app.get("/", (req, res)=>{
     console.log(chalk.blue('Hello world!'));
-    res.send("Hello world");
+    res.send("Hello world!!!!!");
 });
 
 app.use("/cards", cardsRouter);
@@ -37,3 +37,8 @@ mongoose
   .catch((err) => {
     console.error('Error connecting to mongo', err.reason)
   });
+
+
+  
+
+

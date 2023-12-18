@@ -1,8 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { User } = require("./../models/user.schema");
 
-
-
 verifyToken = (req, res, next) => {
     try {
         const bearerHeader = req.headers["authorization"];
